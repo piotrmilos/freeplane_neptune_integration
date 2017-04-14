@@ -6,9 +6,9 @@ import random
 import requests
 from requests.auth import HTTPBasicAuth
 from easydict import EasyDict as edict
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 import numpy as np
-import seaborn as sns
+# import seaborn as sns
 # from region import Region
 
 
@@ -65,6 +65,7 @@ class NeptuneService(object):
             raise Exception("Unknown region " + self._region)
 
     def _get_api_version(self):
+        # self._api_version = "1.4"
         if self._api_version == None:
             url = self._get_base_url() + 'version'
             resp = requests.get(url, auth=HTTPBasicAuth(self.neptune_instance.user, self.neptune_instance.password))
