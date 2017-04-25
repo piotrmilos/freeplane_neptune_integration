@@ -5,6 +5,7 @@ import json
 from deepsense.generated.swagger_client.apis import DefaultApi
 from deepsense.generated.swagger_client import ApiClient, Experiment
 
+
 def sh_escape(s):
    return s.replace("(","\\(").replace(")","\\)").replace(" ","\\ ").replace("@","\@")
 
