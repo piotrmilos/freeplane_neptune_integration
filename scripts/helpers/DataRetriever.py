@@ -1,6 +1,7 @@
 import base64
 import argparse
 import json
+import yaml
 
 from deepsense.generated.swagger_client.apis import DefaultApi
 from deepsense.generated.swagger_client import ApiClient, Experiment
@@ -33,6 +34,9 @@ api = create_api(
 URL_PREFIX = "https://ml.neptune.deepsense.io/#dashboard/job/"
 
 def detect_host(e):
+    if "ml-team" in e.storage_location:
+        return "past"
+
     if "piotr.milos/" in e.storage_location:
         return "past"
 
@@ -49,19 +53,52 @@ def get_jobs_by_tags(tags):
 
     for e in experiments:
         if str(e.state) == 'running':
-            # e.state('aborted')
+            hierchical_specification_str = None
+            hierchical_specification_version = None
+            params = api.get_experiment_parameters(e.id)[0].to_dict()
+            for p in params['parameters']:
+                if p["name"] == "hierchical_specification_str":
+                    hierchical_specification_str = p["default_value"]
+                    hierchical_specification_version = 1
+                if p["name"] == "hierchical_specification_v2_str":
+                    hierchical_specification_str = p["default_value"]
+                    hierchical_specification_version = 2
+
+
             experiment_data = {}
             experiment_data["name"] = e.name[34:]
             url_id = api.get_experiment_jobs(e.id)[0].id
             job = api.get_experiment_jobs(e.id)[0]
             url = URL_PREFIX + url_id
-            experiment_data["neptune"] = url
+            experiment_data["_Neptune"] = url
             experiment_data["id"] = e.id
             host = detect_host(e)
             movies_command = 'cd ~/TMP && rm -rf * && scp -r "{}:{}jobs/{}/src/dumpdir/*mp4" .'.format(host,
                                                                           sh_escape(e.storage_location)[:-10],
                                                                                  url_id)
-            experiment_data["movies"] = movies_command
+            experiment_data["_Movies"] = movies_command
+            if hierchical_specification_str is not None:
+                hierchical_specification_str = hierchical_specification_str.encode('ascii','ignore')[1:-1]
+                hierchical_specification = yaml.safe_load(str(hierchical_specification_str))
+                if hierchical_specification_version == 2:
+                    hierchical_specification.pop(0)
+                i = 0
+                for spec in hierchical_specification:
+                    if 'MacroPolicyFromTRPOmodularAgent' in spec[0][0]:
+                        file_spec = spec[0][1][0]
+                        if file_spec.startswith("file://"):
+                            experiment_data["_MacroTRPO:{}".format(i)] = file_spec[7:]
+                        if file_spec.startswith("neptune://"):
+                            neptune_job_id = file_spec[10:46]
+                            url = "https://ml.neptune.deepsense.io/#dashboard/job/{}".format(neptune_job_id)
+                            experiment_data["_MacroTRPO:{}".format(i)] = url
+                    if "MacroConstantAction" in spec[0][0]:
+                        experiment_data['_MacroConstant{}'.format(i)] = str(spec[0][1][0])
+                    i += 1
+
+
+
+
 
             experiments_data.append(experiment_data)
 

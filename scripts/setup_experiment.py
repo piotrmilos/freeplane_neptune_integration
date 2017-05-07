@@ -32,8 +32,10 @@ node.style.name='experiment'
 
 for e in experiments:
     e_node = node.createChild(e["name"])
-    e_node.putAt("Neptune", e["neptune"])
-    e_node.putAt("Movies", e["movies"])
+    for k in sorted(e):
+        if k.startswith("_"):
+            e_node.putAt(k[1:], e[k])
+    # e_node.putAt("Movies", e["movies"])
     # e_node.putAt("Id", e["id"])
 #
 # node.putAt("Neptune", cmd_str)
